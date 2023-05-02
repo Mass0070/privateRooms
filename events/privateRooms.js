@@ -5,7 +5,7 @@ const client = new MongoClient(mongodb_url, {
 	useUnifiedTopology: true,
 	useNewUrlParser: true,
 	connectTimeoutMS: 30000,
-	keepAlive: 1
+	keepAlive: true
 });
 async function deleteChannel(channel) {
 	channel.delete()
