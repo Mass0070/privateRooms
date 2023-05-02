@@ -44,36 +44,37 @@ async function garbageCollector() {
 		const mainRoom = await client.channels.cache.get(room.mainRoomID);
 		const waitingRoom = await client.channels.cache.get(room.waitingRoomID);
 		try {
-		if (!mainRoom.members.some(member => member.id === room.ownerID)) {
-		  // Owner is not in main room, check for ADD_REACTION permission
-		const roomPermission = await dbclient.db("SA-2").collection('roomPermissions').findOne({ ownerID: room.ownerID });
-		if (roomPermission) {
-			const usersWithAddReactionPerm = mainRoom.members.filter(member =>
-				roomPermission.permissions.users.some(user => 
-					user.userID === member.id && user.permissions.allow.includes("ADD_REACTIONS")
-				)
-			);
-			
-			if (usersWithAddReactionPerm.size > 0) {
-				console.log("One user found")
-				continue;
-			} else {
-				console.log("No users found")
-				// No users have ADD_REACTION permission or are in the waiting room, delete the private room
-				await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
-				await mainRoom.delete();
-				await waitingRoom.delete();
+			if (!mainRoom.members.some(member => member.id === room.ownerID)) {
+				// Owner is not in main room, check for ADD_REACTION permission
+				const roomPermission = await dbclient.db("SA-2").collection('roomPermissions').findOne({ ownerID: room.ownerID });
+				if (roomPermission) {
+					const usersWithAddReactionPerm = mainRoom.members.filter(member =>
+						roomPermission.permissions.users.some(user => 
+							user.userID === member.id && user.permissions.allow.includes("ADD_REACTIONS")
+						)
+					);
+					
+					if (usersWithAddReactionPerm.size > 0) {
+						console.log("One user found")
+						continue;
+					} else {
+						console.log("No users found")
+						// No users have ADD_REACTION permission or are in the waiting room, delete the private room
+						await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
+						await mainRoom.delete();
+						await waitingRoom.delete();
+					}
+				} else {
+					console.log("No roomPerms found")
+					// If no roomPermission found, delete the private room
+					await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
+					
+					await mainRoom.delete();
+					await waitingRoom.delete();
+				}
 			}
-		} else {
-			console.log("No roomPerms found")
-			  // If no roomPermission found, delete the private room
-			await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
-			
-			await mainRoom.delete();
-			await waitingRoom.delete();
-		}
-		}
-		} catch (error) {console.log("GC Fejl: ", error)
+		} catch (error) {
+			console.log("GC Fejl: ", error)
 		}
 	}
 	} catch (err) {
