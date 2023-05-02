@@ -71,10 +71,6 @@ module.exports = {
                                 value: 'STREAM'
                             },
                             {
-                                name: 'SoundBoard',
-                                value: 'USE_SOUNDBOARD'
-                            },
-                            {
                                 name: 'Keep on leave',
                                 value: 'ADD_REACTIONS'
                             }
@@ -114,10 +110,6 @@ module.exports = {
                             {
                                 name: 'Stream',
                                 value: 'STREAM'
-                            },
-                            {
-                                name: 'SoundBoard',
-                                value: 'USE_SOUNDBOARD'
                             },
                             {
                                 name: 'Keep on leave',
