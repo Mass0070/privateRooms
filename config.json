@@ -6,7 +6,7 @@
     },
 
     "mongodb": {
-        "url": "mongodb://username:password@ip:port/DB?retryWrites=true&w=majority"
+        "url": "mongodb://SA-Room:password@ip:port/DB?retryWrites=true&w=majority"
     },
 
     "privatrum": {
