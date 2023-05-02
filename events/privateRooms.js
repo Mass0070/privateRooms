@@ -1,8 +1,12 @@
 const { mongodb, privatrum } = require('../config.json');
 const MongoClient = require('mongodb').MongoClient;
 const mongodb_url = mongodb.url;
-const client = new MongoClient(mongodb_url, { useUnifiedTopology: true}, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
-
+const client = new MongoClient(mongodb_url, {
+	useUnifiedTopology: true,
+	useNewUrlParser: true,
+	connectTimeoutMS: 30000,
+	keepAlive: 1
+});
 async function deleteChannel(channel) {
 	channel.delete()
 		.then(() => console.log(`Successfully deleted channel ${channel.name}`))
