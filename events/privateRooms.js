@@ -12,6 +12,11 @@ async function deleteChannel(channel) {
 		.then(() => console.log(`Successfully deleted channel ${channel.name}`))
 		.catch(console.error);
 }
+async function disconnect(channel) {
+	channel.delete()
+		.then(() => console.log(`Successfully disconnted user ${user.name}`))
+		.catch(console.error);
+}
 
 module.exports = {
 	name: 'voiceStateUpdate',
@@ -51,7 +56,9 @@ module.exports = {
 				console.log("No users found")
 				try {
 					deleteChannel(memberRoomChannel);
-					await client.db("SA-2").collection("privateRooms").deleteOne(data);
+					setTimeout(async () => {
+						await client.db("SA-2").collection("privateRooms").deleteOne(data);
+					}, 3000);
 				} catch (error) {
 					console.log("Fejlet med at slettet privatrummet. - "+data) 
 				}
@@ -108,7 +115,9 @@ module.exports = {
 					dataPerms = { "mainRoomID": before.channel.id }
 					try {
 						deleteChannel(memberRoomChannel);
-						await client.db("SA-2").collection("privateRooms").deleteOne(dataPerms);
+						setTimeout(async () => {
+							await client.db("SA-2").collection("privateRooms").deleteOne(dataPerms);
+						}, 3000);
 						console.log("Slet Rum - NY")
 					} catch (error) {
 						console.log("Fejlet med at slettet privatrummet. - "+dataPerms) 
@@ -138,14 +147,18 @@ module.exports = {
                     deleteChannel(before.channel);
                     waitingRoom = before.guild.channels.cache.get(info.waitingRoomID);
                     deleteChannel(waitingRoom);
-                    await client.db("SA-2").collection("privateRooms").deleteOne(data);
+                    setTimeout(async () => {
+						await client.db("SA-2").collection("privateRooms").deleteOne(data);
+					}, 3000);
                     return;
                 } else {
                     if (before.member.id == info.ownerID) {
                         deleteChannel(before.channel);
                         waitingRoom = before.guild.channels.cache.get(info.waitingRoomID);
                         deleteChannel(waitingRoom);
-                        await client.db("SA-2").collection("privateRooms").deleteOne(data);
+						setTimeout(async () => {
+							await client.db("SA-2").collection("privateRooms").deleteOne(data);
+						}, 3000);
                         return;
                     }
                 }
@@ -155,12 +168,18 @@ module.exports = {
 		if (after.channel != null && infoBefore != null && after.channel.id == prooms_id) {
 			try {
 				await after.member.voice.setChannel(before.channel);
-			} catch (error) {}
-		}
+			} catch (error) {
+				// Failed to move user back, disconnect instead
+				await disconnect(after.member);
+			}
+		}		
 		if (after.channel != null && infoBefore != null && after.channel.id == infoBefore.waitingRoomID) {
 			try {
 				await after.member.voice.setChannel(before.channel);
-			} catch (error) {}
+			} catch (error) {
+				// Failed to move user back, disconnect instead
+				await disconnect(after.member);
+			}
 		}
 		if (after.channel != null && infoBefore == null && after.channel.id == prooms_id) {
 			// Set necessary variables
@@ -223,10 +242,10 @@ module.exports = {
 					.map(p => ({
 					id: p.roleID,
 					allow: [
-						...(p.permissions.allow || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL'].includes(perm))
+						...(p.permissions.allow || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL', 'SPEAK'].includes(perm))
 					],
 					deny: [
-						...(p.permissions.deny || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL'].includes(perm))
+						...(p.permissions.deny || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL', 'SPEAK'].includes(perm))
 					],
 					})),
 				...(ownerPermissions.permissions.users || [])
@@ -234,14 +253,14 @@ module.exports = {
 					.map(p => ({
 					id: p.userID,
 					allow: [
-						...(p.permissions.allow || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL'].includes(perm))
+						...(p.permissions.allow || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL', 'SPEAK'].includes(perm))
 					],
 					deny: [
-						...(p.permissions.deny || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL'].includes(perm))
+						...(p.permissions.deny || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL', 'SPEAK'].includes(perm))
 					],
 					}))
 				]
-				.filter(p => p.allow.includes('MOVE_MEMBERS') || p.allow.includes('CONNECT') || p.allow.includes('VIEW_CHANNEL') || p.deny.includes('MOVE_MEMBERS') || p.deny.includes('CONNECT') || p.deny.includes('VIEW_CHANNEL'))
+				.filter(p => p.allow.includes('MOVE_MEMBERS') || p.allow.includes('CONNECT') || p.allow.includes('VIEW_CHANNEL') || p.allow.includes('SPEAK') || p.deny.includes('MOVE_MEMBERS') || p.deny.includes('CONNECT') || p.deny.includes('VIEW_CHANNEL') || p.deny.includes('SPEAK'))
 					: defaultRoomPerms && defaultRoomPerms.permissions
 					? [...(defaultRoomPerms.permissions.roles.waitingRoom || [])
 							.filter(p => after.guild.roles.cache.has(p.roleID))
@@ -280,7 +299,9 @@ module.exports = {
 				console.log("userID: " + after.member.id + "\nmainID: " + mainRoom.id);
 				deleteChannel(mainRoom);
 				deleteChannel(waitingRoom);
-				await client.db("SA-2").collection("privateRooms").deleteOne(data);
+				setTimeout(async () => {
+					await client.db("SA-2").collection("privateRooms").deleteOne(data);
+				}, 3000);
 			}
 		}
 	}
