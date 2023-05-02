@@ -28,7 +28,7 @@ const client = new Client({
 });
 
 async function garbageCollector() {
-	console.log("Test GC")
+	console.log("Running GC")
 	await dbclient.connect();
 	try {
 	  // Get all private rooms
@@ -86,7 +86,7 @@ async function garbageCollector() {
 
 setTimeout(garbageCollector, 5000);
 // Set up a timer that checks every 10 minutes
-const intervalTime = 10 * 60 * 1000; // 10 minutes in milliseconds
+const intervalTime = 30 * 60 * 1000; // 10 minutes in milliseconds
 setInterval(garbageCollector, intervalTime);
 
 const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
