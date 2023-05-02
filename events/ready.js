@@ -1,5 +1,3 @@
-const fs = require('fs');
-
 let commandsRegistered = false;
 
 module.exports = {
@@ -12,7 +10,7 @@ module.exports = {
 
 		if (!commandsRegistered) {
 			//removeAllCommands(client)
-			registerCommands(client, "662831492229103626");
+			//registerCommands(client, "662831492229103626");
 			commandsRegistered = true;
 		}
 

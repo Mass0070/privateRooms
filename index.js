@@ -1,8 +1,8 @@
 const fs = require('fs');
-const axios = require('axios');
+const { token, mongodb, privatrum } = require('./config.json');
 const { Client, Intents, Collection } = require("discord.js");
 const MongoClient = require('mongodb').MongoClient;
-const mongodb_url = '';
+const mongodb_url = mongodb.url;
 const dbclient = new MongoClient(mongodb_url, { useUnifiedTopology: true}, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
 
 
@@ -46,7 +46,7 @@ async function garbageCollector() {
 		try {
 		if (!mainRoom.members.some(member => member.id === room.ownerID)) {
 		  // Owner is not in main room, check for ADD_REACTION permission
-		const roomPermission = await dbclient.db("SA-2").collection('RoomPermissions').findOne({ ownerID: room.ownerID });
+		const roomPermission = await dbclient.db("SA-2").collection('roomPermissions').findOne({ ownerID: room.ownerID });
 		if (roomPermission) {
 			const usersWithAddReactionPerm = mainRoom.members.filter(member =>
 				roomPermission.permissions.users.some(user => 
@@ -73,7 +73,7 @@ async function garbageCollector() {
 			await waitingRoom.delete();
 		}
 		}
-		} catch (error) {
+		} catch (error) {console.log("GC Fejl: ", error)
 		}
 	}
 	} catch (err) {
@@ -123,7 +123,7 @@ client.on('interactionCreate', async interaction => {
 
 client.on('channelCreate', async (channel) => {
 	//console.log(channel)
-	if (channel?.parentId !== "1087103324286889984") {
+	if (channel?.parentId !== privatrum.kategori) {
 		return;
 	}
 	
@@ -157,4 +157,4 @@ client.on('channelCreate', async (channel) => {
 
 
 
-client.login('NzI4Mjg3NTY2NTY2MTI5NzA4.GLG7bo.UFfG7FSE9LZ_2Yikv_QdYj7ki3SoIrRzEmvhK8');
+client.login(token);

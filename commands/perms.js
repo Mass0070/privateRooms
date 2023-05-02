@@ -1,6 +1,6 @@
 const { MessageEmbed } = require("discord.js");
 const axios = require('axios');
-const USERNAME_PATTERN = /^(?=.{1,20}$)[A-Za-z+_]+$/;
+const { axiosc } = require('../config.json');
 
 async function getCustomPermission(permission) {
     await new Promise(resolve => setTimeout(resolve, 250));
@@ -144,9 +144,9 @@ module.exports = {
             timeout: 2000,
             method: 'post',
             maxBodyLength: Infinity,
-            url: `http:///api/permission/${interaction.user.id}`,
+            url: axiosc.url + `/api/permission/${interaction.user.id}`,
             headers: { 
-                 
+                [axiosc.user]: axiosc.pass, 
                 'Content-Type': 'application/json'
             }
             })
@@ -217,9 +217,9 @@ module.exports = {
             timeout: 2000,
             method: 'post',
             maxBodyLength: Infinity,
-            url: 'http:///api/permission/',
+            url: axiosc.url + '/api/permission/',
             headers: { 
-                 
+                [axiosc.user]: axiosc.pass, 
                 'Content-Type': 'application/json'
             },
             data : data
@@ -303,9 +303,9 @@ module.exports = {
             timeout: 2000,
             method: 'post',
             maxBodyLength: Infinity,
-            url: 'http:///api/permission/',
+            url: axiosc.url + '/api/permission/',
             headers: { 
-                 
+                [axiosc.user]: axiosc.pass,
                 'Content-Type': 'application/json'
             },
             data : data
@@ -357,15 +357,15 @@ module.exports = {
         }
 
         if (subCommand === 'list') {
-            interaction.deferReply()
+            interaction.deferReply({ephemeral: true})
             .then(() => {
                 axios({
                 timeout: 2000,
                 method: 'get',
                 maxBodyLength: Infinity,
-                url: `http:///api/permission/${interaction.user.id}`,
+                url: axiosc.url + `/api/permission/${interaction.user.id}`,
                 headers: { 
-                     
+                    [axiosc.user]: axiosc.pass, 
                     'Content-Type': 'application/json'
                 }
                 })
@@ -392,7 +392,7 @@ module.exports = {
                                     ? user.permissions.deny.map(p => `\n\`[✘] ${p}\``).join('')
                                     : '';
                                 
-                                embed.addField(userName, `${allowedPerms} ${deniedPerms}`);
+                                embed.addFields({ name: userName, value: allowedPerms + deniedPerms });
                                 } catch (error) {
                                     console.error(`Error fetching member with ID ${user.userID}: ${error}`);
                                 }

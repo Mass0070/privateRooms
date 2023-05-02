@@ -1,5 +1,6 @@
+const { mongodb, privatrum } = require('../config.json');
 const MongoClient = require('mongodb').MongoClient;
-const mongodb_url = '';
+const mongodb_url = mongodb.url;
 const client = new MongoClient(mongodb_url, { useUnifiedTopology: true}, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
 
 async function deleteChannel(channel) {
@@ -20,8 +21,8 @@ module.exports = {
 		
 		//console.log("Test - Main: ", infoBefore)
 
-        let prooms_id = '1087103471699898560';
-        let proomscategory_id = '1087103324286889984';
+        let prooms_id = privatrum.opret;
+        let proomscategory_id = privatrum.kategori;
         data = { "ownerID": before.member.id }
 		info = await client.db("SA-2").collection("privateRooms").findOne(data);
 
@@ -32,7 +33,7 @@ module.exports = {
 			if (memberRoomChannel != null) {
 			console.log("Sletter rum her 1")
 			try {
-				const roomPermission = await client.db("SA-2").collection("RoomPermissions").findOne({ ownerID: before.member.id });
+				const roomPermission = await client.db("SA-2").collection("roomPermissions").findOne({ ownerID: before.member.id });
 				const usersWithAddReactionPerm = memberRoomChannel.members.filter(member =>
 				roomPermission.permissions.users.some(user =>
 					user.userID === member.id && user.permissions.allow.includes("ADD_REACTIONS")
@@ -87,7 +88,7 @@ module.exports = {
 			//console.log("Ny debug 1")
 			//console.log(before.channel.id)
 			try {
-				const roomPermission = await client.db("SA-2").collection("RoomPermissions").findOne({ ownerID: infoBefore.mainRoomID });
+				const roomPermission = await client.db("SA-2").collection("roomPermissions").findOne({ ownerID: infoBefore.mainRoomID });
 				//console.log(roomPermission)
 				const usersWithAddReactionPerm = memberRoomChannel.members.filter(member =>
 					roomPermission.permissions.users.some(user =>
@@ -162,9 +163,9 @@ module.exports = {
 			const proomsCategory = after.guild.channels.cache.get(proomscategory_id);
 		
 			// Create main room and waiting room
-			// Query the RoomPermissions collection for the owner's permissions
-			const ownerPermissions = await client.db("SA-2").collection("RoomPermissions").findOne({ ownerID: after.member.id, active: 1 });
-			const defaultRoomPerms = await client.db("SA-2").collection("RoomPermissions").findOne({ ownerID: "DB", active: 1 });
+			// Query the roomPermissions collection for the owner's permissions
+			const ownerPermissions = await client.db("SA-2").collection("roomPermissions").findOne({ ownerID: after.member.id, active: 1 });
+			const defaultRoomPerms = await client.db("SA-2").collection("roomPermissions").findOne({ ownerID: "DB", active: 1 });
 			// If ownerPermissions exist, use them. Otherwise, use default permissions
 			const permissionOverwrites = ownerPermissions && ownerPermissions.permissions
 			? [...(ownerPermissions.permissions.roles.mainRoom || [])
@@ -189,7 +190,11 @@ module.exports = {
 							id: p.roleID,
 							allow: p.permissions.allow,
 							deny: p.permissions.deny,
-						}))
+						})),
+						{
+							id: after.member.id, // add permissions for the member who created the private room
+							allow: ['VIEW_CHANNEL', 'CONNECT', 'MOVE_MEMBERS'],
+						}
 					]
 				: [];
 
@@ -209,7 +214,7 @@ module.exports = {
 			await client.db("SA-2").collection('privateRooms').insertOne(mainRoomData);
 			
 			const WaitingpermissionOverwrites = ownerPermissions && ownerPermissions.permissions
-			? [      ...(ownerPermissions.permissions.roles.waitingRoom || [])
+			? [...(ownerPermissions.permissions.roles.waitingRoom || [])
 					.filter(p => after.guild.roles.cache.has(p.roleID))
 					.map(p => ({
 					id: p.roleID,
@@ -230,21 +235,24 @@ module.exports = {
 					deny: [
 						...(p.permissions.deny || []).filter(perm => ['MOVE_MEMBERS', 'CONNECT', 'VIEW_CHANNEL'].includes(perm))
 					],
-					})),
+					}))
 				]
 				.filter(p => p.allow.includes('MOVE_MEMBERS') || p.allow.includes('CONNECT') || p.allow.includes('VIEW_CHANNEL') || p.deny.includes('MOVE_MEMBERS') || p.deny.includes('CONNECT') || p.deny.includes('VIEW_CHANNEL'))
 					: defaultRoomPerms && defaultRoomPerms.permissions
-					? [...(defaultRoomPerms.permissions.roles.mainRoom || [])
+					? [...(defaultRoomPerms.permissions.roles.waitingRoom || [])
 							.filter(p => after.guild.roles.cache.has(p.roleID))
 							.map(p => ({
 								id: p.roleID,
 								allow: p.permissions.allow,
 								deny: p.permissions.deny,
-							}))
+							})),
+							{
+								id: after.member.id, // add permissions for the member who created the private room
+								allow: ['VIEW_CHANNEL', 'CONNECT', 'MOVE_MEMBERS'],
+							}
 						]
 					: [];
-			//console.log("Perms: ", WaitingpermissionOverwrites)
-
+					
 			const waitingRoom = await proomsCategory.createChannel(
 			`🡱 Venterum [${after.member.user.tag}]`,
 			{
