@@ -16,9 +16,6 @@ async function getCustomPermission(permission) {
     if (permission === "STREAM") {
         return "Adgang til at streame";
     }
-    if (permission === "USE_SOUNDBOARD") {
-        return "Adgang til at bruge soundboard";
-    }
     if (permission === "ADD_REACTIONS") {
         return "Keep on leave";
     }
