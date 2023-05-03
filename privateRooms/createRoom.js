@@ -1,10 +1,10 @@
 const { privatrum } = require('../config.json');
-const { move, connect, disconnect } = require('../Utils/channel.js');
+const { move, connect, disconnect, deleteChannel } = require('../Utils/channel.js');
 const dbPromise = require('../Utils/mongo.js');
 
-let creatingPrivateRoom = false; // initialize a flag to track if a private room is currently being created
-
 async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) {
+    let creatingPrivateRoom = false; // initialize a flag to track if a private room is currently being created
+
     if (creatingPrivateRoom) {
         // if a private room is currently being created, wait for it to finish
         await new Promise((resolve) => {
@@ -77,7 +77,9 @@ async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) 
             mainRoomID: mainRoom.id,
         };
 
-        await dbclient.db("SA-2").collection('privateRooms').insertOne(mainRoomData);
+        // Insert the main room ID into the database and get the generated _id
+        const result = await dbclient.db("SA-2").collection('privateRooms').insertOne(mainRoomData);
+        const mainRoomId = result.insertedId;
 
         const WaitingpermissionOverwrites = ownerPermissions && ownerPermissions.permissions
         ? [...(ownerPermissions.permissions.roles.waitingRoom || [])
@@ -134,7 +136,7 @@ async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) 
             waitingRoomID: waitingRoom.id,
         };
 
-        await dbclient.db("SA-2").collection('privateRooms').updateOne({ mainRoomID: mainRoom.id }, { $set: waitingRoomData });
+        await dbclient.db("SA-2").collection('privateRooms').updateOne({ _id: mainRoomId }, { $set: waitingRoomData });
         
         // Move member to the main room
         try {
@@ -143,7 +145,7 @@ async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) 
             console.log("userID: " + after.member.id + "\nmainID: " + mainRoom.id);
             deleteChannel(mainRoom);
             deleteChannel(waitingRoom);
-            await dbclient.db("SA-2").collection("privateRooms").deleteOne(data);
+            await dbclient.db("SA-2").collection("privateRooms").deleteOne({ _id: mainRoomId });
         }
 
     // set the flag back to false to indicate that the private room creation is complete
