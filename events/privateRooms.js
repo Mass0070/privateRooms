@@ -10,10 +10,10 @@ module.exports = {
 	async execute(before, after) {
 		let PrivateRoom = false; // initialize a flag to track if a private room is currently being created
 
-        if (before.channel == after.channel) return;
-		if (after.channel?.parentId !== privatrum.kategori) {
-            return;
-        }
+        //if (before.channel == after.channel) return;
+		//if (after.channel?.parentId !== privatrum.kategori) {
+        //    return;
+        //}
 
 		if (PrivateRoom) {
 			// if a private room is currently being created, wait for it to finish
@@ -26,20 +26,24 @@ module.exports = {
 				}, 1500);
 			});
 		}
-		// set the flag to true to indicate that a private room is being created
-		PrivateRoom = true;
+		try {
+			// set the flag to true to indicate that a private room is being created
+			PrivateRoom = true;
 
-		const dbclient = await dbPromise;
-		await dbclient.connect();
-		// Check the room the user came from
-		infoBeforeChannel = await dbclient.db("SA-2").collection("privateRooms").findOne({ "mainRoomID": before.channel ? before.channel.id : null });
-		
-		// Check if user has a room in the database
-		infoBeforeMemberID = await dbclient.db("SA-2").collection("privateRooms").findOne({ ownerID: before.member.id });
+			const dbclient = await dbPromise;
+			await dbclient.connect();
+			// Check the room the user came from
+			infoBeforeChannel = await dbclient.db("SA-2").collection("privateRooms").findOne({ "mainRoomID": before.channel ? before.channel.id : null });
+			
+			// Check if user has a room in the database
+			infoBeforeMemberID = await dbclient.db("SA-2").collection("privateRooms").findOne({ ownerID: before.member.id });
 
-		await userHasRooms(before, after, infoBeforeChannel, infoBeforeMemberID);
+			await userHasRooms(before, after, infoBeforeChannel, infoBeforeMemberID);
 
-		// set the flag back to false to indicate that the private room creation is complete
+			// set the flag back to false to indicate that the private room creation is complete
+		} catch (error) {
+			console.log("privateRooms Fejl", error);
+		}
 		PrivateRoom = false;
 	}
 }
