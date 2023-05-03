@@ -30,9 +30,7 @@ module.exports = {
 		PrivateRoom = true;
 
 		const dbclient = await dbPromise;
-		if (!dbclient.isConnected()) {
-            await dbclient.connect();
-        }
+		await dbclient.connect();
 		// Check the room the user came from
 		infoBeforeChannel = await dbclient.db("SA-2").collection("privateRooms").findOne({ "mainRoomID": before.channel ? before.channel.id : null });
 		
