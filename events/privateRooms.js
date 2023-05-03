@@ -4,6 +4,8 @@ const { deleteChannel, disconnect } = require('../Utils/channel.js');
 const { userHasRooms } = require('../privateRooms/userHasRooms.js');
 const { checkChannelMembers } = require('../privateRooms/checkChannelMembers.js');
 
+let PrivateRoom = false; // initialize a flag to track if a private room is currently being created
+
 module.exports = {
 	name: 'voiceStateUpdate',
 	once: false,
@@ -12,6 +14,20 @@ module.exports = {
 		if (after.channel?.parentId !== privatrum.kategori) {
             return;
         }
+
+		if (PrivateRoom) {
+			// if a private room is currently being created, wait for it to finish
+			await new Promise((resolve) => {
+				const intervalId = setInterval(() => {
+				if (!PrivateRoom) {
+					clearInterval(intervalId);
+					resolve();
+				}
+				}, 1000);
+			});
+		}
+		// set the flag to true to indicate that a private room is being created
+		PrivateRoom = true;
 
 		const dbclient = await dbPromise;
 		await dbclient.connect();
@@ -23,5 +39,7 @@ module.exports = {
 
 		await userHasRooms(before, after, infoBeforeChannel, infoBeforeMemberID);
 
+		// set the flag back to false to indicate that the private room creation is complete
+		PrivateRoom = false;
 	}
 }
