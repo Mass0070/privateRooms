@@ -2,11 +2,13 @@ let commandsRegistered = false;
 
 module.exports = {
 	name: 'ready',
+	once: true,
 	execute(client) {
-		client.user.setStatus('dnd')
-		client.user.setActivity(`superawesome.dk`, {
-			type: "PLAYING",
-		})
+		//client.user.setStatus('dnd')
+		//client.user.setActivity(`superawesome.dk`, {
+		//	type: "PLAYING",
+		//})
+		setInterval(() => { client.user.setPresence({ status: `dnd`, activities: [{ name: `Spotify | ${new Date().toLocaleTimeString('dk', { timeZone: 'Europe/Copenhagen', timeStyle: 'short' })}`, type: 2 }] }) }, 15 * 1000)
 
 		if (!commandsRegistered) {
 			//removeAllCommands(client)

@@ -1,10 +1,7 @@
 const fs = require('fs');
 const { token, mongodb, privatrum } = require('./config.json');
 const { Client, Intents, Collection } = require("discord.js");
-const MongoClient = require('mongodb').MongoClient;
-const mongodb_url = mongodb.url;
-const dbclient = new MongoClient(mongodb_url, { useUnifiedTopology: true}, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
-
+const dbPromise = require('./Utils/mongo.js');
 
 const client = new Client({
     intents: [
@@ -27,8 +24,11 @@ const client = new Client({
     }
 });
 
+// Start the garbageCollector function
 async function garbageCollector() {
 	console.log("Running GC")
+
+	const dbclient = await dbPromise;
 	await dbclient.connect();
 	try {
 	  // Get all private rooms
@@ -43,6 +43,7 @@ async function garbageCollector() {
 		
 		const mainRoom = await client.channels.cache.get(room.mainRoomID);
 		const waitingRoom = await client.channels.cache.get(room.waitingRoomID);
+		
 		try {
 			if (!mainRoom.members.some(member => member.id === room.ownerID)) {
 				// Owner is not in main room, check for ADD_REACTION permission
@@ -90,6 +91,7 @@ setTimeout(garbageCollector, 5000);
 const intervalTime = 30 * 60 * 1000; // 10 minutes in milliseconds
 setInterval(garbageCollector, intervalTime);
 
+
 const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
 for (const file of eventFiles) {
 	const event = require(`./events/${file}`);
@@ -98,6 +100,7 @@ for (const file of eventFiles) {
 	} else {
 		client.on(event.name, (...args) => event.execute(...args));
 	}
+	console.log("[EVENT]: Events Handler Started");
 }
 
 client.commands = new Collection();
@@ -105,6 +108,7 @@ const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	client.commands.set(command.config.name, command);
+	console.log("[EVENT]: Commands Started");
 }
 
 client.on('interactionCreate', async interaction => {
@@ -121,41 +125,6 @@ client.on('interactionCreate', async interaction => {
 		return interaction.reply({ content: '*Fejl*', ephemeral: true });
 	}
 });
-
-client.on('channelCreate', async (channel) => {
-	//console.log(channel)
-	if (channel?.parentId !== privatrum.kategori) {
-		return;
-	}
-	
-	await dbclient.connect();
-    const rooms = await dbclient.db("SA-2").collection('privateRooms').find().toArray();
-
-    // Sort the rooms array in ascending order of position
-	rooms.sort((a, b) => a.position - b.position);
-
-	// Loop through each room
-	for (let i = 0; i < rooms.length; i++) {
-		const room = rooms[i];
-
-		// Find the main room and waiting room channels
-		try {
-			const mainRoomGuild = await client.channels.fetch(room.mainRoomID);
-			const waitRoomGuild = await client.channels.fetch(room.waitingRoomID);
-
-			// Check if the main room is below the waiting room in position
-			//console.log("Before: " + mainRoomGuild.position + " - " + waitRoomGuild.position)
-			if (waitRoomGuild.position > mainRoomGuild.position) {
-				//console.log(mainRoomGuild.position + " - " + waitRoomGuild.position)
-				// Swap the positions of the two channels
-				const tempPos = await mainRoomGuild.position;
-				await mainRoomGuild.setPosition(tempPos);
-				await waitRoomGuild.setPosition(tempPos + 1);
-			}
-        } catch (error) {}
-    }
-});
-
 
 
 client.login(token);
