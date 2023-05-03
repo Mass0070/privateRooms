@@ -8,7 +8,7 @@ module.exports = {
 		//client.user.setActivity(`superawesome.dk`, {
 		//	type: "PLAYING",
 		//})
-		setInterval(() => { client.user.setPresence({ status: `dnd`, activities: [{ name: `Spotify | ${new Date().toLocaleTimeString('dk', { timeZone: 'Europe/Copenhagen', timeStyle: 'short' })}`, type: 2 }] }) }, 15 * 1000)
+		setInterval(() => { client.user.setPresence({ status: `dnd`, activities: [{ name: `Spotify | ${new Date().toLocaleTimeString('en-DK', { timeZone: 'Europe/Copenhagen', timeStyle: 'short' })}`, type: 2 }] }) }, 15 * 1000)
 
 		if (!commandsRegistered) {
 			//removeAllCommands(client)
