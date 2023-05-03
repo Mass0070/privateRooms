@@ -2,9 +2,9 @@ const { privatrum } = require('../config.json');
 const { move, connect, disconnect } = require('../Utils/channel.js');
 const dbPromise = require('../Utils/mongo.js');
 
-async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) {
-    let creatingPrivateRoom = false; // initialize a flag to track if a private room is currently being created
+let creatingPrivateRoom = false; // initialize a flag to track if a private room is currently being created
 
+async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) {
     if (creatingPrivateRoom) {
         // if a private room is currently being created, wait for it to finish
         await new Promise((resolve) => {
@@ -68,7 +68,6 @@ async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) 
         const mainRoom = await proomsCategory.createChannel(`${after.member.user.tag} [Privatrum]`, {
             type: 'GUILD_VOICE',
             parent: privatrum.kategori,
-            position: 1,
             permissionOverwrites,
         });
 
@@ -126,7 +125,6 @@ async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) 
         {
             type: 'GUILD_VOICE',
             parent: privatrum.kategori,
-            position: 2,
             permissionOverwrites: [...WaitingpermissionOverwrites],
         }
         );
@@ -147,12 +145,6 @@ async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) 
             deleteChannel(waitingRoom);
             await dbclient.db("SA-2").collection("privateRooms").deleteOne(data);
         }
-
-
-
-
-
-
 
     // set the flag back to false to indicate that the private room creation is complete
     creatingPrivateRoom = false;
