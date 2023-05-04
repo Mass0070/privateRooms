@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { token, mongodb, privatrum } = require('./config.json');
+const { deleteChannel } = require('./Utils/channel.js');
 const { Client, Intents, Collection } = require("discord.js");
 const dbPromise = require('./Utils/mongo.js');
 
@@ -36,13 +37,21 @@ async function garbageCollector() {
 
 	  // Loop through each private room
 	for (const room of privateRooms) {
-		// Check if the owner is in the main room
-		if (privateRooms[0].ownerID != null && privateRooms[0].mainRoomID == null) {
-			await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
-		}
-		
 		const mainRoom = await client.channels.cache.get(room.mainRoomID);
 		const waitingRoom = await client.channels.cache.get(room.waitingRoomID);
+
+		// Check if the owner is in the main room
+		if (privateRooms[0].ownerID != null && privateRooms[0].mainRoomID == null || privateRooms[0].ownerID != null && privateRooms[0].waitingRoomID == null) {
+			await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
+			deleteChannel(room.mainRoomID);
+			deleteChannel(room.waitingRoomID);
+		}
+		
+		if (privateRooms[0].ownerID != null && mainRoom == null & waitingRoom != null || privateRooms[0].ownerID != null && waitingRoom == null & mainRoom != null) {
+			await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
+			deleteChannel(mainRoom);
+			deleteChannel(waitingRoom);
+		}
 		
 		try {
 			if (!mainRoom.members.some(member => member.id === room.ownerID)) {
