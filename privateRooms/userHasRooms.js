@@ -4,12 +4,18 @@ const { move } = require('../Utils/channel.js');
 const { checkChannelMembers } = require('../privateRooms/checkChannelMembers.js');
 
 async function userHasRooms(before, after, infoBeforeChannel, infoBeforeMemberID) {
-    console.log("\ninfoBeforeChannel:", infoBeforeChannel)
+    //console.log("\ninfoBeforeChannel:", infoBeforeChannel)
 
-    console.log("\ninfoBeforeMemberID:", infoBeforeMemberID)
+    //console.log("\ninfoBeforeMemberID:", infoBeforeMemberID)
     try {
         if (before.channel != null && before.channel?.parentId !== privatrum.kategori || before.channel != null && before.channel?.parentId == privatrum.kategori || after.channel != null && after.channel?.parentId == privatrum.kategori) {
             console.log("Before channel - log");
+            if (infoBeforeMemberID == null && before.channel?.parentId == privatrum.kategori && after.channel.id == privatrum.opret) {
+                setTimeout(async () => {
+                    await createRoom(before, after, infoBeforeChannel, infoBeforeMemberID);
+                }, 1000);
+            }
+
 			// Wait 4 seconds then check channel members
             setTimeout(async () => {
                 await checkChannelMembers(before, after);
