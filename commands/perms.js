@@ -52,19 +52,19 @@ module.exports = {
                         required: true,
                         choices: [
                             {
-                                name: 'View',
+                                name: 'Adgang til at se kanalen',
                                 value: 'VIEW_CHANNEL'
                             },
                             {
-                                name: 'Connect',
+                                name: 'Adgang til at forbinde til kanalen',
                                 value: 'CONNECT'
                             },
                             {
-                                name: 'Move',
+                                name: 'Adgang til at flytte medlemmere',
                                 value: 'MOVE_MEMBERS'
                             },
                             {
-                                name: 'Stream',
+                                name: 'Adgang til at streame',
                                 value: 'STREAM'
                             },
                             {
@@ -93,19 +93,19 @@ module.exports = {
                         required: false,
                         choices: [
                             {
-                                name: 'View',
+                                name: 'Adgang til at se kanalen',
                                 value: 'VIEW_CHANNEL'
                             },
                             {
-                                name: 'Connect',
+                                name: 'Adgang til at forbinde til kanalen',
                                 value: 'CONNECT'
                             },
                             {
-                                name: 'Move',
+                                name: 'Adgang til at flytte medlemmere',
                                 value: 'MOVE_MEMBERS'
                             },
                             {
-                                name: 'Stream',
+                                name: 'Adgang til at streame',
                                 value: 'STREAM'
                             },
                             {
