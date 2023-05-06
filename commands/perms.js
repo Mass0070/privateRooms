@@ -19,6 +19,9 @@ async function getCustomPermission(permission) {
     if (permission === "ADD_REACTIONS") {
         return "Keep on leave";
     }
+    if (permission === "OWNER") {
+        return "Adgang til se kanalen, forbinde til kanalen og flytte medlemmere";
+    }
     return Promise.resolve(permission);
 }
 
@@ -70,6 +73,10 @@ module.exports = {
                             {
                                 name: 'Keep on leave',
                                 value: 'ADD_REACTIONS'
+                            },
+                            {
+                                name: 'Owner Perms',
+                                value: 'OWNER'
                             }
                         ]
                     }
