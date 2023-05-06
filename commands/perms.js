@@ -1,6 +1,6 @@
 const { MessageEmbed } = require("discord.js");
 const axios = require('axios');
-const { axiosc } = require('../config.json');
+const { axiosc, roles } = require('../config.json');
 
 async function getCustomPermission(permission) {
     await new Promise(resolve => setTimeout(resolve, 250));
@@ -190,14 +190,27 @@ module.exports = {
                     .setDescription(`Brugeren skal være en del af Discorden!`)
                 interaction.reply({embeds: [embed], ephemeral: true})
                 return;
-            }            
+            }     
+            
+            let premium = null;
+
+            if (interaction.member.roles.cache.has(roles.vip) || interaction.member.roles.cache.has(roles.booster) || interaction.member.roles.cache.has(roles.staff)) {
+                if (interaction.member.roles.cache.has(roles.vip) && interaction.member.roles.cache.has(roles.booster) || interaction.member.roles.cache.has(roles.staff)) {
+                    premium = "BoV";
+                } else if (interaction.member.roles.cache.has(roles.vip)) {
+                    premium = "VIP";
+                } else if (interaction.member.roles.cache.has(roles.booster)) {
+                    premium = "Booster";
+                } 
+            }
 
             const permission = interaction.options.getString('permission');
             var CustomName = await getCustomPermission(permission)
             let data = JSON.stringify({
                 userID: interaction.user.id,
+                premium: premium,
                 userToAdd: user.id,
-                type: subCommand === 'add' ? 'add' : 'remove',
+                type: 'add',
                 typePerm: "allow",
                 permission: permission
             });
@@ -243,6 +256,24 @@ module.exports = {
                         .setTitle("Permission")
                         .setDescription(`Du kan ikke tilføje permissions til dig selv!`)
                     interaction.reply({embeds: [embed], ephemeral: true})
+                } else if(message === "Max 3 users as a normal user") { 
+                    embed = new MessageEmbed()
+                        .setColor('#5b8abf')
+                        .setTitle("Permission")
+                        .setDescription(`Du kan kun tilføje permission til 3 andre spillere!`)
+                    interaction.reply({embeds: [embed], ephemeral: true})
+                } else if(message === "Max 10 users with Booster" || message === "Max 10 users with VIP") { 
+                    embed = new MessageEmbed()
+                        .setColor('#5b8abf')
+                        .setTitle("Permission")
+                        .setDescription(`Du kan kun tilføje permission til 10 andre spillere!`)
+                    interaction.reply({embeds: [embed], ephemeral: true})
+                } else if(message === "Max 20 users with Booster and VIP") { 
+                    embed = new MessageEmbed()
+                        .setColor('#5b8abf')
+                        .setTitle("Permission")
+                        .setDescription(`Du kan kun tilføje permission til 20 andre spillere!`)
+                    interaction.reply({embeds: [embed], ephemeral: true})
                 } else {
                     embed = new MessageEmbed()
                         .setColor('#ff5242')
@@ -283,7 +314,7 @@ module.exports = {
             let data = JSON.stringify({
                 userID: interaction.user.id,
                 userToAdd: user.id,
-                type: subCommand === 'add' ? 'add' : 'remove',
+                type: 'remove',
                 typePerm: "allow",
                 permission: permission
             });
