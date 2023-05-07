@@ -3,6 +3,7 @@ const { token, mongodb, privatrum } = require('./config.json');
 const { deleteChannel } = require('./Utils/channel.js');
 const { Client, Intents, Collection } = require("discord.js");
 const dbPromise = require('./Utils/mongo.js');
+const { updateStaffList } = require('./Utils/updateStaffs.js')
 
 const client = new Client({
     intents: [
@@ -96,8 +97,8 @@ async function garbageCollector() {
 }
 
 setTimeout(garbageCollector, 5000);
-// Set up a timer that checks every 10 minutes
-const intervalTime = 30 * 60 * 1000; // 10 minutes in milliseconds
+// Set up a timer that checks every 30 minutes
+const intervalTime = 30 * 60 * 1000; // 30 minutes in milliseconds
 setInterval(garbageCollector, intervalTime);
 
 
@@ -134,6 +135,13 @@ client.on('interactionCreate', async interaction => {
 		return interaction.reply({ content: '*Fejl*', ephemeral: true });
 	}
 });
+
+// 24 * 60 * 60 * 1000
+// 3 * 60 * 1000
+const intervalTime2 = 24 * 60 * 60 * 1000; // One day
+setInterval(() => {
+    updateStaffList(client);
+}, intervalTime2);
 
 
 client.login(token);
