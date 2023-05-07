@@ -61,7 +61,7 @@ async function updateStaffList(bot) {
 
 
         try {
-            const message = await channel.messages.fetch("1104570399146115145");
+            const message = await channel.messages.fetch("1104898869051002882");
             await message.edit({ embeds: [embed] });
         } catch (error) {
             console.log("Kunne ikke opdatere embed, forkert id!")
@@ -72,6 +72,8 @@ async function updateStaffList(bot) {
     }
 }
 
+let checkEmojis = true;
+
 async function getEmojis(guild, staffs) {
     const emojis = await guild.emojis.fetch();
     const emojiNames = emojis.map((x) => x.name);
@@ -79,30 +81,33 @@ async function getEmojis(guild, staffs) {
 
     for (const staff of staffs) {
         const emojiName = staff.username;
-    
+
         // Check if an emoji with the same name already exists
         if (!emojiNames.includes(emojiName)) {
             const url = `https://crafatar.com/renders/head/${staff.uuid}?overlay`;
-    
-            try {
-                // Create the new emoji
-                const emoji = await guild.emojis.create(url, emojiName);
-                newEmojis.push(emoji);
-    
-            } catch (error) {
-                console.error(`Failed to create emoji for ${emojiName}: ${error}`);
-    
-                // Stop trying to create new emojis if the maximum limit is reached
-                if (error.message.includes("Maximum number of emojis reached")) {
-                    break;
+
+            if (checkEmojis) {
+                try {
+                    // Create the new emoji
+                    const emoji = await guild.emojis.create(url, emojiName);
+                    newEmojis.push(emoji);
+                    console.log(`Created emoji for ${emojiName}`);
+                } catch (error) {
+                    console.error(`Failed to create emoji for ${emojiName}: ${error}`);
+
+                    // Stop trying to create new emojis if the maximum limit is reached
+                    if (error.message.includes("Maximum number of emojis reached")) {
+                        checkEmojis = false;
+                    }
                 }
             }
         }
     }
-    
-    // Return all emojis (including any newly created ones)
-    return emojis.concat(newEmojis);
+
+    // Convert the emojis Collection object to an array before concatenating
+    return [...emojis.values(), ...newEmojis];
 }
+
 
 
 module.exports = {
