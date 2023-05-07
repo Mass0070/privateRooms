@@ -2,6 +2,13 @@ const { MessageEmbed } = require("discord.js");
 const axios = require('axios');
 const { axiosc, staffteam } = require('../config.json');
 
+const options = {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    timeZone: 'Europe/Copenhagen'
+};
+
 async function updateStaffList(bot) {
     console.log("Updating StaffList")
     try {
@@ -55,7 +62,7 @@ async function updateStaffList(bot) {
                 **SR. Mods (${srmods.length})**\n${srmodsMap.join("\n")}\n
                 **Mods (${mods.length})**\n${modsMap.join("\n")}\n
                 **Supporter (${supporter.length})**\n${supporterMap.join("\n")}
-                \n\nSidst opdateret: **${new Date().toLocaleDateString('en-GB')}**`
+                \n\nSidst opdateret: **${new Date().toLocaleDateString('en-GB', options)}**`
             )
             .setColor(16098851);
 
