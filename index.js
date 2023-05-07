@@ -138,10 +138,13 @@ client.on('interactionCreate', async interaction => {
 
 // 24 * 60 * 60 * 1000
 // 3 * 60 * 1000
-const intervalTime2 = 24 * 60 * 60 * 1000; // One day
+const intervalTime2 = 48 * 60 * 60 * 1000; // One day
 setInterval(() => {
     updateStaffList(client);
 }, intervalTime2);
+
+//updateStaffList(client, 5000);
+
 
 
 client.login(token);
