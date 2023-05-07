@@ -1,6 +1,6 @@
 const { MessageEmbed } = require("discord.js");
 const axios = require('axios');
-const { axiosc, roles } = require('../config.json');
+const { axiosc, staffteam } = require('../config.json');
 
 async function updateStaffList(bot) {
     console.log("Updating StaffList")
@@ -18,8 +18,8 @@ async function updateStaffList(bot) {
 
         const staffs = staffsResponse.data;
 
-        const guild = await bot.guilds.fetch("662831492229103626");
-        const channel = await bot.channels.fetch("735799438043250708");
+        const guild = await bot.guilds.fetch(staffteam.guildID);
+        const channel = await bot.channels.fetch(staffteam.channelID);
 
         const admins = staffs.filter((x) => x.role === "admin");
         const srmods = staffs.filter((x) => x.role === "seniormod");
@@ -59,9 +59,8 @@ async function updateStaffList(bot) {
             )
             .setColor(16098851);
 
-
         try {
-            const message = await channel.messages.fetch("1104898869051002882");
+            const message = await channel.messages.fetch(staffteam.messageID);
             await message.edit({ embeds: [embed] });
         } catch (error) {
             console.log("Kunne ikke opdatere embed, forkert id!")
@@ -107,7 +106,6 @@ async function getEmojis(guild, staffs) {
     // Convert the emojis Collection object to an array before concatenating
     return [...emojis.values(), ...newEmojis];
 }
-
 
 
 module.exports = {
