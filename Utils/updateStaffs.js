@@ -58,11 +58,11 @@ async function updateStaffList(bot) {
         const embed = new MessageEmbed()
             .setTitle("Staff Teamet")
             .setDescription(
-                `**Admins (${admins.length})**\n${adminsMap.join("\n")}\n
-                **SR. Mods (${srmods.length})**\n${srmodsMap.join("\n")}\n
-                **Mods (${mods.length})**\n${modsMap.join("\n")}\n
-                **Supporter (${supporter.length})**\n${supporterMap.join("\n")}
-                \n\nSidst opdateret: **${new Date().toLocaleDateString('en-GB', options)}**`
+                `**Admins (${admins.length})**\n${adminsMap.join("\n")}` +
+                `\n\n**SR. Mods (${srmods.length})**\n${srmodsMap.join("\n")}` +
+                `\n\n**Mods (${mods.length})**\n${modsMap.join("\n")}` +
+                `\n\n**Supporter (${supporter.length})**\n${supporterMap.join("\n")}` +
+                `\n\nSidst opdateret: **${new Date().toLocaleDateString('en-GB', options)}**`
             )
             .setColor(16098851);
 
