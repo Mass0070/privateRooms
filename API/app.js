@@ -64,46 +64,6 @@ app.post("/api/*", requiredAuthenticated, async (req, res, next) => {
   next()
 });
 
-app.get("/api/links", requiredAuthenticated, async (req, res) => {
-  await client.connect();
-  if (req.query.code != null) {
-    var check = await client.db("SA").collection('Code').findOne({
-      code: req.query.code,
-    })
-  } else if (req.query.uuid != null) {
-    var check = await client.db("SA").collection('Code').findOne({
-      uuid: req.query.uuid,
-    })
-  }
-  if (check != null) {
-    res.json(check)
-  } else {
-    res.status(404).send(`<pre>Cannot GET ${req.url}</pre>`)
-  }
-  await client.close()
-});
-
-app.get("/api/users/minecraft/*", requiredAuthenticated, async (req, res) => {
-  await client.connect();
-  var check = null;
-  if (req.query.all == "true") {
-    var check = await client.db("SA").collection('Brugere')
-    .find({"Discord ID": req.params[0], Verificeret: true}, { projection: { uuid: 1 } } )
-    .toArray();
-  } else {
-    var check = await client.db("SA").collection('Brugere').findOne({
-      uuid: req.params[0],
-    })
-  }
-  if (check != null) {
-    res.json(check)
-  } else {
-    res.status(404).send(`<pre>Cannot GET ${req.url}</pre>`)
-  }
-  await client.close()
-});
-
-
 const defaultPermissions = {
   ownerID: null,
   active: 1,
@@ -340,12 +300,9 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
 
     return res.json({ message: "Success" });
   }
-
 });
 
-
-
-
+// Get staff members for #staff-team
 app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
     try {
       connection.query(`SELECT * FROM ( ` +
@@ -369,9 +326,7 @@ app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
     }
 });
 
-
-
-
+// Update username on Discord
 app.get("/api/discord/update", requiredAuthenticated, async (req, res, next) => {
   //console.log(req.query)
   //console.log("Username " + req.query.username)
@@ -393,50 +348,12 @@ app.get("/api/discord/update", requiredAuthenticated, async (req, res, next) => 
   }
 });
 
-app.post("/api/links", requiredAuthenticated, async (req, res) => {
-  await client.connect();
-  await client.db("SA").collection('Code').insertOne({
-    uuid: req.query.uuid,
-    code: req.query.code
-  })
-  res.json({"Message": "Success"})
-  await client.close()
-});
-
-app.post("/api/users/minecraft/*", requiredAuthenticated, async (req, res) => {
-  await client.connect();
-  await client.db("SA").collection('Brugere').insertOne(req.body)
-  res.json({"Message": "Success"})
-  await client.close()
-});
-
 app.put("/api/*", requiredAuthenticated, async (req, res, next) => {
   console.log("put")
   next()
 });
 
-app.put("/api/users/minecraft/*", requiredAuthenticated, async (req, res) => {
-  await client.connect();
-  let filter = {uuid: req.body.uuid}
-  let updatedDocs = {Verificeret: req.body.Verificeret}
-  //await client.db("SA").collection('Brugere').updateOne(filter, updatedDocs)
-  await client.db("SA").collection('Brugere').updateOne(
-    {uuid: req.body.uuid},
-    { $set: { "Discord ID": req.body.Discord_ID, Verificeret: req.body.Verificeret }})
-  res.json({"Message": "Success"})
-  await client.close()
-});
-
 app.delete("/api/*", requiredAuthenticated, async (req, res, next) => {
   console.log("delete")
   next()
-});
-
-app.delete("/api/links", requiredAuthenticated, async (req, res, next) => {
-  await client.connect();
-  await client.db("SA").collection('Code').deleteOne({
-    code: req.query.code
-  })
-  res.json({"Message": "Success"})
-  await client.close()
 });
