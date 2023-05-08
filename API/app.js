@@ -24,6 +24,37 @@ function validateUsername(username) {
   return USERNAME_PATTERN.test(username);
 }
 
+const UUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+function validateUUID(uuid) {
+  return UUID_PATTERN.test(uuid);
+}
+
+async function updateStaff(staff) {
+  await client.connect();
+
+  const collection = client.db("SA-2").collection("staffs");
+
+  // Loop through each staff object in the array
+  for (let i = 0; i < staff.length; i++) {
+    const { username, uuid, role } = staff[i];
+
+    // Check if a document with the given `uuid` exists
+    const existingStaff = await collection.findOne({ uuid });
+
+    if (existingStaff) {
+      // Update the existing document
+      await collection.updateOne(
+        { _id: existingStaff._id },
+        { $set: { username, role } }
+      );
+    } else {
+      // Insert a new document
+      await collection.insertOne({ username, uuid, role });
+    }
+  }
+
+  await client.close();
+}
 
 const app = express();
 
@@ -304,26 +335,44 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
 
 // Get staff members for #staff-team
 app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
-    try {
-      connection.query(`SELECT * FROM ( ` +
-      `SELECT ` +
-          `p.username, ` +
-            `CASE ` +
-            `WHEN p.uuid = '264aed13-8842-40b9-86bd-1225c1f962bd' THEN 'seniormod' ` +
-              `ELSE p.role ` +
-              `END AS role, ` +
-            `p.uuid ` +
-            `FROM players p ` +
-          `WHERE p.role != 'player' AND p.id != -1 ` +
-          `) t ` +
-        `WHERE role IN ('support', 'mod', 'seniormod', 'admin') ` +
-        `ORDER BY role DESC, username ASC`, (error, results, fields) => {
-        if (error) throw error;
-        res.json(results);
-      });
-    } catch (err) {
-      return res.json({ message: 'Internal Server Error', err });
-    }
+  try {
+    await connection.query(`SELECT * FROM ( ` +
+    `SELECT ` +
+        `p.username, ` +
+          `CASE ` +
+          `WHEN p.uuid = '264aed13-8842-40b9-86bd-1225c1f962bd' THEN 'seniormod' ` +
+            `ELSE p.role ` +
+            `END AS role, ` +
+          `p.uuid ` +
+          `FROM players p ` +
+        `WHERE p.role != 'player' AND p.id != -1 ` +
+        `) t ` +
+      `WHERE role IN ('support', 'mod', 'seniormod', 'admin') ` +
+      `ORDER BY role DESC, username ASC`, async (error, results, fields) => {
+      if (error) throw error;
+      await updateStaff(results);
+      res.json(results);
+    });
+  } catch (err) {
+    return res.json({ message: 'Internal Server Error', err });
+  }
+
+});
+
+// Get staff members for #staff-team
+app.get("/api/oldstaffs", requiredAuthenticated, async (req, res, next) => {
+  try {
+    await client.connect();
+
+    const collection = client.db("SA-2").collection("staffs");
+    const cursor = collection.find({});
+    const documents = await cursor.toArray();
+
+    res.json(documents);
+  } catch (err) {
+    return res.json({ message: 'Internal Server Error', err });
+  }
+  await client.close();
 });
 
 // Update username on Discord
@@ -356,4 +405,20 @@ app.put("/api/*", requiredAuthenticated, async (req, res, next) => {
 app.delete("/api/*", requiredAuthenticated, async (req, res, next) => {
   console.log("delete")
   next()
+});
+
+// delete staff members for DB
+app.delete("/api/oldstaffs/:uuid", requiredAuthenticated, async (req, res, next) => {
+  const uuid = req.params.uuid;
+  if (!validateUUID(uuid)) {
+    return res.json({ message: 'Invalid uuid' });
+  }
+  try {
+    await client.connect();
+    await client.db("SA-2").collection('staffs').deleteOne({ uuid: uuid });
+    res.json({ message: "Success" })
+  } catch (err) {
+    return res.json({ message: 'Internal Server Error', err });
+  }
+  await client.close();
 });

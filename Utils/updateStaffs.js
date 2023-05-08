@@ -110,9 +110,50 @@ async function getEmojis(guild, staffs) {
         }
     }
 
+    // Check if there are old staff members and remove their corresponding emojis if necessary
+    const oldstaffsResponse = await axios({
+        timeout: 2000,
+        method: "get",
+        maxBodyLength: Infinity,
+        url: axiosc.url + `/api/oldstaffs`,
+        headers: {
+            [axiosc.user]: axiosc.pass,
+            "Content-Type": "application/json",
+        },
+    });
+
+    const oldstaffs = oldstaffsResponse.data;
+    for (const oldStaff of oldstaffs) {
+        const foundStaff = staffs.find((s) => s.uuid === oldStaff.uuid);
+        if (!foundStaff) {
+            try {
+                const emoji = emojis.find((e) => e.name === oldStaff.username);
+                if (emoji) {
+                    await emoji.delete();
+                    console.log(`Deleted emoji for ${oldStaff.username}`);
+                }
+            } catch (error) {
+                console.error(`Failed to delete emoji for ${oldStaff.username}: ${error}`);
+            }
+    
+            // Remove the old staff member from the database
+            console.error(`Deleted ${oldStaff.username} from DB`);
+            await axios({
+                timeout: 2000,
+                method: "delete",
+                maxBodyLength: Infinity,
+                url: axiosc.url + `/api/oldstaffs/${oldStaff.uuid}`,
+                headers: {
+                    [axiosc.user]: axiosc.pass,
+                    "Content-Type": "application/json",
+                },
+            });
+        }    
+    }
+
     // Convert the emojis Collection object to an array before concatenating
     return [...emojis.values(), ...newEmojis];
-}
+}  
 
 
 module.exports = {
