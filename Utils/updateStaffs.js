@@ -32,6 +32,7 @@ async function updateStaffList(bot) {
         const srmods = staffs.filter((x) => x.role === "seniormod");
         const mods = staffs.filter((x) => x.role === "mod");
         const supporter = staffs.filter((x) => x.role === "support");
+        const ub = staffs.filter((x) => x.role === "Udvikler" || x.role === "Bygger");
 
         const emojis = await getEmojis(guild, staffs);
 
@@ -55,6 +56,11 @@ async function updateStaffList(bot) {
             return `${emoji ? emoji.toString() : ""} **Supporter** ${x.username}`;
         });
 
+        const ubMap = ub.map((x) => {
+            const emoji = emojis.find((y) => y.name === x.username);
+            return `${emoji ? emoji.toString() : ""} **${x.role}** ${x.username}`;
+        });
+
         const embed = new MessageEmbed()
             .setTitle("Staff Teamet")
             .setDescription(
@@ -62,6 +68,7 @@ async function updateStaffList(bot) {
                 `\n\n**SR. Mods (${srmods.length})**\n${srmodsMap.join("\n")}` +
                 `\n\n**Mods (${mods.length})**\n${modsMap.join("\n")}` +
                 `\n\n**Supporter (${supporter.length})**\n${supporterMap.join("\n")}` +
+                `\n\n**Udviklingsteam (${ub.length})**\n${ubMap.join("\n")}` +
                 `\n\nSidst opdateret: **${new Date().toLocaleDateString('en-GB', options)}**`
             )
             .setColor(16098851);
