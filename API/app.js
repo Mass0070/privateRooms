@@ -29,9 +29,17 @@ function validateUUID(uuid) {
   return UUID_PATTERN.test(uuid);
 }
 
-async function updateStaff(staff) {
-  await client.connect();
+async function addToPartner(uuid) {
+  console.log("Adding %s as member to LabyMod", uuid)
+}
 
+async function removeFromPartner(uuid) {
+  console.log("Removing %s as member from LabyMod", uuid)
+}
+
+async function updateStaff(staff) {
+  if (staff == null) return;
+  await client.connect();
   const collection = client.db("SA-2").collection("staffs");
 
   // Loop through each staff object in the array
@@ -50,6 +58,7 @@ async function updateStaff(staff) {
     } else {
       // Insert a new document
       await collection.insertOne({ username, uuid, role });
+      await addToPartner(uuid);
     }
   }
 
@@ -253,22 +262,22 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
 
   if (type == "add") {
     // Check if the maximum number of users is reached
-    if (premium == null && userPermissions && userPermissions.permissions.users.length >= 4) {
+    if (premium == null && userPermissions && userPermissions.permissions.users.length >= 5) {
       // Return an error message or do something else as appropriate
       return res.json({ message: 'Max 3 users as a normal user' });
     }
     // Boster
-    if (premium != null && premium == "Booster" && userPermissions && userPermissions.permissions.users.length >= 11) {
+    if (premium != null && premium == "Booster" && userPermissions && userPermissions.permissions.users.length >= 12) {
       // Return an error message or do something else as appropriate
       return res.json({ message: 'Max 10 users with Booster' });
     }
     // VIP
-    if (premium != null && premium == "VIP" && userPermissions && userPermissions.permissions.users.length >= 11) {
+    if (premium != null && premium == "VIP" && userPermissions && userPermissions.permissions.users.length >= 12) {
       // Return an error message or do something else as appropriate
       return res.json({ message: 'Max 10 users with VIP' });
     }
     // Booster og VIP
-    if (premium != null && premium == "BoV" && userPermissions && userPermissions.permissions.users.length >= 21) {
+    if (premium != null && premium == "BoV" && userPermissions && userPermissions.permissions.users.length >= 22) {
       // Return an error message or do something else as appropriate
       return res.json({ message: 'Max 20 users with Booster and VIP' });
     }
@@ -328,7 +337,7 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
 
     // Save the updated permissions to the database
     await client.db("SA-2").collection('roomPermissions').updateOne({ ownerID: userID, active: 1 }, { $set: { permissions: permissionsToUse } }, { upsert: true });
-
+    await client.close();
     return res.json({ message: "Success" });
   }
 });
@@ -337,18 +346,20 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
 app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
   try {
     await connection.query(`SELECT * FROM ( ` +
-    `SELECT ` +
-        `p.username, ` +
-          `CASE ` +
-          `WHEN p.uuid = '264aed13-8842-40b9-86bd-1225c1f962bd' THEN 'seniormod' ` +
-            `ELSE p.role ` +
-            `END AS role, ` +
-          `p.uuid ` +
-          `FROM players p ` +
-        `WHERE p.role != 'player' AND p.id != -1 ` +
-        `) t ` +
-      `WHERE role IN ('support', 'mod', 'seniormod', 'admin') ` +
-      `ORDER BY role DESC, username ASC`, async (error, results, fields) => {
+        `SELECT ` +
+          `p.username, ` +
+            `CASE ` +
+            `WHEN p.uuid = '264aed13-8842-40b9-86bd-1225c1f962bd' THEN 'seniormod' ` +
+            `WHEN p.role = 'bygger' THEN 'Bygger' ` +
+            `WHEN p.role = 'developer' THEN 'Udvikler' ` +
+              `ELSE p.role ` +
+              `END AS role, ` +
+            `p.uuid ` +
+            `FROM players p ` +
+          `WHERE p.role != 'player' AND p.id != -1 ` +
+          `) t ` +
+          `WHERE role IN ('bygger', 'support', 'mod', 'seniormod', 'udvikler', 'admin') ` +
+          `ORDER BY role ASC, username ASC`, async (error, results, fields) => {
       if (error) throw error;
       await updateStaff(results);
       res.json(results);
@@ -368,11 +379,11 @@ app.get("/api/oldstaffs", requiredAuthenticated, async (req, res, next) => {
     const cursor = collection.find({});
     const documents = await cursor.toArray();
 
+    await client.close();
     res.json(documents);
   } catch (err) {
     return res.json({ message: 'Internal Server Error', err });
   }
-  await client.close();
 });
 
 // Update username on Discord
@@ -416,9 +427,10 @@ app.delete("/api/oldstaffs/:uuid", requiredAuthenticated, async (req, res, next)
   try {
     await client.connect();
     await client.db("SA-2").collection('staffs').deleteOne({ uuid: uuid });
+    await client.close();
+    await removeFromPartner(uuid)
     res.json({ message: "Success" })
   } catch (err) {
     return res.json({ message: 'Internal Server Error', err });
   }
-  await client.close();
 });
