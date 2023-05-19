@@ -393,8 +393,8 @@ app.get("/api/discord/update", requiredAuthenticated, async (req, res, next) => 
   //console.log("ID " + req.query.discordID)
   //console.log("---")
   if (validateUsername(req.query.username)) {
-    console.log("Username " + req.query.username)
-    console.log("ID " + req.query.discordID)
+    console.log("Username ${req.query.username}")
+    console.log("ID ${req.query.discordID}")
     connection.query("SELECT players.username, discordAccounts.discordID "+
     "FROM players "+
     "JOIN discordAccounts ON players.id = discordAccounts.playerID "+

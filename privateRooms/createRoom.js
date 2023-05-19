@@ -142,7 +142,7 @@ async function createRoom(before, after, infoBeforeChannel, infoBeforeMemberID) 
         try {
             await after.member.voice.setChannel(mainRoom);
         } catch (error) {
-            console.log("userID: " + after.member.id + "\nmainID: " + mainRoom.id);
+            console.log("userID: ${after.member.id}\nmainID: ${mainRoom.id}");
             deleteChannel(mainRoom);
             deleteChannel(waitingRoom);
             await dbclient.db("SA-2").collection("privateRooms").deleteOne({ _id: mainRoomId });
