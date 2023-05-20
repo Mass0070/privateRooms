@@ -16,7 +16,7 @@ async function updateStaffList(bot) {
             timeout: 2000,
             method: 'get',
             maxBodyLength: Infinity,
-            url: axiosc.url + `/api/staffs`,
+            url: `${axiosc.url}/api/staffs`,
             headers: { 
                 [axiosc.user]: axiosc.pass, 
                 'Content-Type': 'application/json'
@@ -149,7 +149,7 @@ async function getEmojis(guild, staffs) {
                 timeout: 2000,
                 method: "delete",
                 maxBodyLength: Infinity,
-                url: axiosc.url + `/api/oldstaffs/${oldStaff.uuid}`,
+                url: `${axiosc.url}/api/oldstaffs/${oldStaff.uuid}`,
                 headers: {
                     [axiosc.user]: axiosc.pass,
                     "Content-Type": "application/json",
