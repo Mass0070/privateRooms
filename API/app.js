@@ -1,6 +1,7 @@
 const { requiredAuthenticated  } = require('./auth.js');
-const { mongodb, mariadb } = require('./config.json');
+const { mongodb, mariadb, labymod } = require('./config.json');
 
+const axios = require('axios');
 const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -30,11 +31,42 @@ function validateUUID(uuid) {
 }
 
 async function addToPartner(uuid) {
-  console.log("Adding %s as member to LabyMod", uuid)
+  console.log("Adding %s as member to LabyMod", uuid);
+  try {
+    // Make a POST request with form-data
+    await axios({
+      timeout: 2000,
+      method: "post",
+      maxBodyLength: Infinity,
+      url: `${labymod.url}/${uuid}`,
+      data: `{ "permission": 1 }`,
+      headers: {
+          "X-AUTH-TOKEN": labymod.token,
+          "Content-Type": "application/json",
+      },
+    });
+  } catch (err) {
+    console.log("Failed to add user %s", uuid)
+  }
 }
 
 async function removeFromPartner(uuid) {
-  console.log("Removing %s as member from LabyMod", uuid)
+  console.log("Removing %s as member from LabyMod", uuid);
+  try {
+    // Make a POST request with form-data
+    await axios({
+      timeout: 2000,
+      method: "delete",
+      maxBodyLength: Infinity,
+      url: `${labymod.url}/${uuid}`,
+      headers: {
+          "X-AUTH-TOKEN": labymod.token,
+          "Content-Type": "application/json",
+      },
+    });
+  } catch (err) {
+    console.log("Failed to remove user %s", uuid)
+  }
 }
 
 async function updateStaff(staff) {
@@ -58,7 +90,11 @@ async function updateStaff(staff) {
     } else {
       // Insert a new document
       await collection.insertOne({ username, uuid, role });
-      await addToPartner(uuid);
+      if (staff.length <= 25) {
+        await addToPartner(uuid);
+      } else {
+        console.log("%s kunne ikke tilføjes som medlem.\nMere end 25 staffs.", uuid);
+      }      
     }
   }
 
@@ -182,10 +218,7 @@ app.get('/api/permission/:userID', requiredAuthenticated, async (req, res) => {
   }
     await client.connect();
 
-    var userPermissions = await client.db("SA-2").collection('roomPermissions').findOne({
-      ownerID: userID,
-      active: 1
-    })
+    var userPermissions = await client.db("SA-2").collection('roomPermissions').findOne({ ownerID: { $eq: userID }, active: { $eq: 1 } })
 
     if (!userPermissions) {
       defaultPermissions.ownerID = userID;
@@ -211,7 +244,7 @@ app.post('/api/permission/:userID', requiredAuthenticated, async (req, res) => {
   try {
     // Remove the user's permissions from the database
     await client.connect();
-    await client.db("SA-2").collection('roomPermissions').deleteOne({ ownerID: userID, active: 1 });
+    await client.db("SA-2").collection('roomPermissions').deleteOne({ ownerID: { $eq: userID }, active: { $eq: 1 } });
     await client.close();
     res.json({ message: "Success" })
   } catch (err) {
@@ -241,7 +274,7 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
 
   // Find the user's permissions in the database
   await client.connect();
-  const userPermissions = await client.db("SA-2").collection('roomPermissions').findOne({ ownerID: userID, active: 1 });
+  const userPermissions = await client.db("SA-2").collection('roomPermissions').findOne({ ownerID:  { $eq: userID }, active: 1 });
 
   // If the user's permissions are not found, use default permissions
   const permissionsToUse = userPermissions ? userPermissions.permissions : defaultPermissions.permissions;
@@ -308,8 +341,12 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
     }
 
     // Save the updated permissions to the database
-    await client.db("SA-2").collection('roomPermissions').updateOne({ ownerID: userID, active: 1 }, { $set: { permissions: permissionsToUse } }, { upsert: true });
-
+    await client.db("SA-2").collection('roomPermissions').updateOne(
+      { ownerID: { $eq: userID }, active: { $eq: 1 } },
+      { $set: { permissions: permissionsToUse } },
+      { upsert: true }
+    );
+    
     return res.json({ message: "Success" });
   }
 
@@ -336,7 +373,12 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
     }
 
     // Save the updated permissions to the database
-    await client.db("SA-2").collection('roomPermissions').updateOne({ ownerID: userID, active: 1 }, { $set: { permissions: permissionsToUse } }, { upsert: true });
+    await client.db("SA-2").collection('roomPermissions').updateOne(
+      { ownerID: { $eq: userID }, active: { $eq: 1 } },
+      { $set: { permissions: permissionsToUse } },
+      { upsert: true }
+    );
+    
     await client.close();
     return res.json({ message: "Success" });
   }
@@ -426,7 +468,7 @@ app.delete("/api/oldstaffs/:uuid", requiredAuthenticated, async (req, res, next)
   }
   try {
     await client.connect();
-    await client.db("SA-2").collection('staffs').deleteOne({ uuid: uuid });
+    await client.db("SA-2").collection('staffs').deleteOne({ uuid: { $eq: uuid } });
     await client.close();
     await removeFromPartner(uuid)
     res.json({ message: "Success" })
