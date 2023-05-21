@@ -73,6 +73,8 @@ async function updateStaff(staff) {
   if (staff == null) return;
   await client.connect();
   const collection = client.db("SA-2").collection("staffs");
+  // All time
+  const alltime = client.db("SA-2").collection("staffs-alltime");
 
   // Loop through each staff object in the array
   for (let i = 0; i < staff.length; i++) {
@@ -80,6 +82,7 @@ async function updateStaff(staff) {
 
     // Check if a document with the given `uuid` exists
     const existingStaff = await collection.findOne({ uuid });
+    const alltimeexistingStaff = await alltime.findOne({ uuid });
 
     if (existingStaff) {
       // Update the existing document
@@ -95,6 +98,17 @@ async function updateStaff(staff) {
       } else {
         console.log("%s kunne ikke tilføjes som medlem.\nMere end 25 staffs.", uuid);
       }      
+    }
+
+    if (alltimeexistingStaff) {
+      // Update the existing document
+      await alltime.updateOne(
+        { _id: alltimeexistingStaff._id },
+        { $set: { username, role } }
+      );
+    } else {
+      // Insert a new document
+      await alltime.insertOne({ username, uuid, role });
     }
   }
 
