@@ -115,6 +115,16 @@ async function updateStaff(staff) {
   await client.close();
 }
 
+
+async function checkVIP() {
+  connection.query("UPDATE players p " +
+    "JOIN roles r ON r.name = p.role " +
+    "SET p.vipDays = p.vipDays + 14 " +
+    "WHERE p.role != 'player' AND p.id != -1 AND p.vipDays < 3", (error, results, fields) => {
+      if (error) throw error;
+    });
+}
+
 const app = express();
 
 // CORS setup
@@ -418,6 +428,11 @@ app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
           `ORDER BY role ASC, username ASC`, async (error, results, fields) => {
       if (error) throw error;
       await updateStaff(results);
+      const { checkVIP } = req.body;
+      if (checkVIP == 1) {
+        console.log("Checking VIP!");
+        checkVIP();
+      }
       res.json(results);
     });
   } catch (err) {
@@ -449,8 +464,8 @@ app.get("/api/discord/update", requiredAuthenticated, async (req, res, next) => 
   //console.log("ID " + req.query.discordID)
   //console.log("---")
   if (validateUsername(req.query.username)) {
-    console.log("Username ${req.query.username}")
-    console.log("ID ${req.query.discordID}")
+    console.log(`Username ${req.query.username}`)
+    console.log(`ID ${req.query.discordID}`)
     connection.query("SELECT players.username, discordAccounts.discordID "+
     "FROM players "+
     "JOIN discordAccounts ON players.id = discordAccounts.playerID "+

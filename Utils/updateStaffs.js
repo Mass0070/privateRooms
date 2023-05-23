@@ -17,6 +17,7 @@ async function updateStaffList(bot) {
             method: 'get',
             maxBodyLength: Infinity,
             url: `${axiosc.url}/api/staffs`,
+            data: `{ "checkVIP": 1 }`,
             headers: { 
                 [axiosc.user]: axiosc.pass, 
                 'Content-Type': 'application/json'
