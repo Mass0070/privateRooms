@@ -31,6 +31,7 @@ function validateUUID(uuid) {
 }
 
 async function addToPartner(uuid) {
+  //return;
   console.log("Adding %s as member to LabyMod", uuid);
   try {
     // Make a POST request with form-data
@@ -51,6 +52,7 @@ async function addToPartner(uuid) {
 }
 
 async function removeFromPartner(uuid) {
+  //return;
   console.log("Removing %s as member from LabyMod", uuid);
   try {
     // Make a POST request with form-data
@@ -82,7 +84,7 @@ async function updateStaff(staff) {
 
     // Check if a document with the given `uuid` exists
     const existingStaff = await collection.findOne({ uuid });
-    const alltimeexistingStaff = await alltime.findOne({ uuid });
+    const alltimeexistingStaff = await alltime.findOne({ uuid, staff: true });
 
     if (existingStaff) {
       // Update the existing document
@@ -100,23 +102,25 @@ async function updateStaff(staff) {
       }      
     }
 
+
+    const currentDate = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
     if (alltimeexistingStaff) {
       // Update the existing document
       await alltime.updateOne(
         { _id: alltimeexistingStaff._id },
-        { $set: { username, role } }
+        { $set: { username, uuid, role } }
       );
     } else {
       // Insert a new document
-      await alltime.insertOne({ username, uuid, role });
+      await alltime.insertOne({ username, uuid, role, staff: true, date: { started: currentDate, } });
     }
   }
 
   await client.close();
 }
 
-
 async function checkVIP() {
+  console.log("Checking VIP!");
   connection.query("UPDATE players p " +
     "JOIN roles r ON r.name = p.role " +
     "SET p.vipDays = p.vipDays + 14 " +
@@ -427,11 +431,9 @@ app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
           `WHERE role IN ('bygger', 'support', 'mod', 'seniormod', 'udvikler', 'admin') ` +
           `ORDER BY role ASC, username ASC`, async (error, results, fields) => {
       if (error) throw error;
-      await updateStaff(results);
-      const { checkVIP } = req.body;
-      if (checkVIP == 1) {
-        console.log("Checking VIP!");
-        checkVIP();
+      if (req.body.checkVIP == 1) {
+        await updateStaff(results);
+        await checkVIP();
       }
       res.json(results);
     });
@@ -498,6 +500,13 @@ app.delete("/api/oldstaffs/:uuid", requiredAuthenticated, async (req, res, next)
   try {
     await client.connect();
     await client.db("SA-2").collection('staffs').deleteOne({ uuid: { $eq: uuid } });
+
+    const currentDate = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    await client.db("SA-2").collection('staffs-alltime').updateOne(
+      { uuid: { $eq: uuid }, staff: true },
+      { $set: { staff: false, "date.quitted": currentDate } }
+    );
+
     await client.close();
     await removeFromPartner(uuid)
     res.json({ message: "Success" })
