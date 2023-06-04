@@ -1,5 +1,6 @@
 const { requiredAuthenticated  } = require('./auth.js');
 const { mongodb, mariadb, labymod } = require('./config.json');
+const { updateDocs } = require('./updateDocs.js');
 
 const axios = require('axios');
 const path = require("path");
@@ -28,6 +29,11 @@ function validateUsername(username) {
 const UUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
 function validateUUID(uuid) {
   return UUID_PATTERN.test(uuid);
+}
+
+const EMAIL_PATTERN = /^[a-zA-Z0-9_\-.]+@[a-zA-Z]+\.[a-zA-Z]{2,}$/;
+function validateEmail(email) {
+  return EMAIL_PATTERN.test(email);
 }
 
 async function addToPartner(uuid) {
@@ -79,8 +85,8 @@ async function updateStaff(staff) {
   const alltime = client.db("SA-2").collection("staffs-alltime");
 
   // Loop through each staff object in the array
-  for (let i = 0; i < staff.length; i++) {
-    const { username, uuid, role } = staff[i];
+  for (let i = 0; i < collection.length; i++) {
+    const { username, uuid, role } = collection[i];
 
     // Check if a document with the given `uuid` exists
     const existingStaff = await collection.findOne({ uuid });
@@ -95,7 +101,7 @@ async function updateStaff(staff) {
     } else {
       // Insert a new document
       await collection.insertOne({ username, uuid, role });
-      if (staff.length <= 25) {
+      if (collection.length <= 25) {
         await addToPartner(uuid);
       } else {
         console.log("%s kunne ikke tilføjes som medlem.\nMere end 25 staffs.", uuid);
@@ -167,6 +173,58 @@ app.post("/api/*", requiredAuthenticated, async (req, res, next) => {
   console.log("post")
   next()
 });
+
+
+app.post('/api/staffs/', requiredAuthenticated, async (req, res, next) => {
+  //console.log(req.body)
+  const { userID, email } = req.body;
+  if (!userID || !email || !validateUsername(userID) || !validateEmail(email)) {
+    return res.json({ message: 'Invalid user or email' });
+  }
+
+  connection.query(
+    "SELECT players.uuid FROM players " +
+    "JOIN discordAccounts ON players.id = discordAccounts.playerID " +
+    "WHERE discordAccounts.discordID = ?",
+    [userID],
+    async (error, results, fields) => {
+      if (error) throw error;
+
+      if (results.length === 0) {
+        return res.json({ message: 'Invalid uuid' });
+      }
+
+      const uuid = results[0]['uuid'];
+      if (!validateUUID(uuid)) {
+        return res.json({ message: 'Invalid uuid' });
+      }
+
+      try {
+        await client.connect();
+        const collection = client.db("SA-2").collection("staffs-alltime");
+        const existingStaff = await collection.findOne({ uuid, staff: true });
+
+        if (existingStaff) {
+          if (existingStaff.email) {
+            await client.close();
+            return res.json({ message: 'You can\'t change the email again' });
+          } else {
+            await collection.updateOne({ uuid, staff: true }, { $set: { email: email } });
+            await client.close();
+            return res.json({ message: "Success" });
+          }
+        } else {
+          await client.close();
+          return res.json({ message: 'Staff member not found' });
+        }
+      } catch (error) {
+        await client.close();
+        return res.json({ message: 'Internal Server Error', error });
+      }
+    }
+  );
+});
+
 
 const defaultPermissions = {
   ownerID: null,
@@ -432,6 +490,7 @@ app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
           `ORDER BY role ASC, username ASC`, async (error, results, fields) => {
       if (error) throw error;
       if (req.body.checkVIP == 1) {
+        await updateDocs();
         await updateStaff(results);
         await checkVIP();
       }
@@ -509,6 +568,7 @@ app.delete("/api/oldstaffs/:uuid", requiredAuthenticated, async (req, res, next)
 
     await client.close();
     await removeFromPartner(uuid)
+    await removeFromDocs(uuid);
     res.json({ message: "Success" })
   } catch (err) {
     return res.json({ message: 'Internal Server Error', err });
