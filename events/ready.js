@@ -17,26 +17,23 @@ module.exports = {
 		}
 
 		async function registerCommands(bot, guildId) {
-			let commands = bot.commands.map(x => x.config);
+			const commands = bot.commands.map(x => x.config);
 			if (!bot.application?.owner) {
 				await bot.application?.fetch();
 			}
-			let apiCommands = await bot.application?.commands.set(commands);
-		
+
 			const guild = await bot.guilds.fetch(guildId);
+			const guildCommands = await guild.commands.fetch();
+
+			// Find the commands to delete
+			const commandsToDelete = guildCommands.filter(command => !commands.find(c => c.name === command.name));
+			await Promise.all(commandsToDelete.map(command => command.delete()));
+			
+			// Find the commands to create
+			const commandsToCreate = commands.filter(command => !guildCommands.find(c => c.name === command.name));
+			await Promise.all(commandsToCreate.map(command => guild.commands.create(command)));
 		
-			// Register commands only in the guild
-			let guildCommands = await guild.commands.fetch();
-			guildCommands = guildCommands.filter(command => command.applicationId === bot.application.id);
-			let commandsRegistered = guildCommands.size === apiCommands.size && guildCommands.every(command => apiCommands.find(c => c.name === command.name));
-		
-			if (!commandsRegistered) {
-				await guild.commands.set([]);
-			for (const command of apiCommands.values()) {
-				await guild.commands.create(command);
-			}
-				console.log(`Registered ${apiCommands.size} commands in guild ${guild.id}`);
-			}
+			console.log(`Registered ${commands.length} commands in guild ${guild.id}`);
 		
 			// Delete commands in DMs
 			const dmCommands = await bot.application.commands.fetch();

@@ -114,12 +114,34 @@ for (const file of eventFiles) {
 }
 
 client.commands = new Collection();
+client.aliases = new Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
+
+commandFiles.forEach(file => {
 	const command = require(`./commands/${file}`);
-	client.commands.set(command.config.name, command);
-	console.log("[EVENT]: Commands Started");
-}
+	const commandName = command.config.name;
+
+	client.commands.set(commandName, command);
+	console.log(`[EVENT]: Command ${commandName} Started`);
+
+	if (command.config.aliases) {
+		console.log(command.config.aliases);
+		command.config.aliases.forEach(alias => {
+		const aliasCommand = {
+			...command,
+			config: {
+			...command.config,
+			name: alias
+			}
+		};
+
+		client.commands.set(alias, aliasCommand);
+		console.log(`[EVENT]: Alias ${alias} for ${commandName} Added`);
+		});
+	}
+});
+
+
 
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
