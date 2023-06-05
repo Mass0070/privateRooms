@@ -50,7 +50,7 @@ module.exports = {
             });
 
             const responseData = response.data;
-            console.log(responseData);
+            //console.log(responseData);
 
             if (responseData.message === "You can't change the email again") {
                 const embed = new MessageEmbed()
