@@ -1,10 +1,9 @@
 const fs = require('fs');
 const { token, mongodb, privatrum } = require('./config.json');
+const { deleteChannel } = require('./Utils/channel.js');
 const { Client, Intents, Collection } = require("discord.js");
-const MongoClient = require('mongodb').MongoClient;
-const mongodb_url = mongodb.url;
-const dbclient = new MongoClient(mongodb_url, { useUnifiedTopology: true}, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
-
+const dbPromise = require('./Utils/mongo.js');
+const { updateStaffList } = require('./Utils/updateStaffs.js')
 
 const client = new Client({
     intents: [
@@ -27,8 +26,11 @@ const client = new Client({
     }
 });
 
+// Start the garbageCollector function
 async function garbageCollector() {
 	console.log("Running GC")
+
+	const dbclient = await dbPromise;
 	await dbclient.connect();
 	try {
 	  // Get all private rooms
@@ -36,13 +38,22 @@ async function garbageCollector() {
 
 	  // Loop through each private room
 	for (const room of privateRooms) {
-		// Check if the owner is in the main room
-		if (privateRooms[0].ownerID != null && privateRooms[0].mainRoomID == null) {
-			await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
-		}
-		
 		const mainRoom = await client.channels.cache.get(room.mainRoomID);
 		const waitingRoom = await client.channels.cache.get(room.waitingRoomID);
+
+		// Check if the owner is in the main room
+		if (privateRooms[0].ownerID != null && privateRooms[0].mainRoomID == null || privateRooms[0].ownerID != null && privateRooms[0].waitingRoomID == null) {
+			await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
+			deleteChannel(room.mainRoomID);
+			deleteChannel(room.waitingRoomID);
+		}
+		
+		if (privateRooms[0].ownerID != null && mainRoom == null & waitingRoom != null || privateRooms[0].ownerID != null && waitingRoom == null & mainRoom != null) {
+			await dbclient.db("SA-2").collection('privateRooms').deleteOne({ _id: room._id });
+			deleteChannel(mainRoom);
+			deleteChannel(waitingRoom);
+		}
+		
 		try {
 			if (!mainRoom.members.some(member => member.id === room.ownerID)) {
 				// Owner is not in main room, check for ADD_REACTION permission
@@ -86,9 +97,10 @@ async function garbageCollector() {
 }
 
 setTimeout(garbageCollector, 5000);
-// Set up a timer that checks every 10 minutes
-const intervalTime = 30 * 60 * 1000; // 10 minutes in milliseconds
+// Set up a timer that checks every 30 minutes
+const intervalTime = 30 * 60 * 1000; // 30 minutes in milliseconds
 setInterval(garbageCollector, intervalTime);
+
 
 const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
 for (const file of eventFiles) {
@@ -98,14 +110,38 @@ for (const file of eventFiles) {
 	} else {
 		client.on(event.name, (...args) => event.execute(...args));
 	}
+	console.log("[EVENT]: Events Handler Started");
 }
 
 client.commands = new Collection();
+client.aliases = new Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
+
+commandFiles.forEach(file => {
 	const command = require(`./commands/${file}`);
-	client.commands.set(command.config.name, command);
-}
+	const commandName = command.config.name;
+
+	client.commands.set(commandName, command);
+	console.log(`[EVENT]: Command ${commandName} Started`);
+
+	if (command.config.aliases) {
+		console.log(command.config.aliases);
+		command.config.aliases.forEach(alias => {
+		const aliasCommand = {
+			...command,
+			config: {
+			...command.config,
+			name: alias
+			}
+		};
+
+		client.commands.set(alias, aliasCommand);
+		console.log(`[EVENT]: Alias ${alias} for ${commandName} Added`);
+		});
+	}
+});
+
+
 
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
@@ -122,39 +158,14 @@ client.on('interactionCreate', async interaction => {
 	}
 });
 
-client.on('channelCreate', async (channel) => {
-	//console.log(channel)
-	if (channel?.parentId !== privatrum.kategori) {
-		return;
-	}
-	
-	await dbclient.connect();
-    const rooms = await dbclient.db("SA-2").collection('privateRooms').find().toArray();
+// 24 * 60 * 60 * 1000
+// 3 * 60 * 1000
+const intervalTime2 = 48 * 60 * 60 * 1000; // One day
+setInterval(() => {
+    updateStaffList(client);
+}, intervalTime2);
 
-    // Sort the rooms array in ascending order of position
-	rooms.sort((a, b) => a.position - b.position);
-
-	// Loop through each room
-	for (let i = 0; i < rooms.length; i++) {
-		const room = rooms[i];
-
-		// Find the main room and waiting room channels
-		try {
-			const mainRoomGuild = await client.channels.fetch(room.mainRoomID);
-			const waitRoomGuild = await client.channels.fetch(room.waitingRoomID);
-
-			// Check if the main room is below the waiting room in position
-			//console.log("Before: " + mainRoomGuild.position + " - " + waitRoomGuild.position)
-			if (waitRoomGuild.position > mainRoomGuild.position) {
-				//console.log(mainRoomGuild.position + " - " + waitRoomGuild.position)
-				// Swap the positions of the two channels
-				const tempPos = await mainRoomGuild.position;
-				await mainRoomGuild.setPosition(tempPos);
-				await waitRoomGuild.setPosition(tempPos + 1);
-			}
-        } catch (error) {}
-    }
-});
+//updateStaffList(client, 5000);
 
 
 
