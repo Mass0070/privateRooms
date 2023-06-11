@@ -85,8 +85,8 @@ async function updateStaff(staff) {
   const alltime = client.db("SA-2").collection("staffs-alltime");
 
   // Loop through each staff object in the array
-  for (let i = 0; i < collection.length; i++) {
-    const { username, uuid, role } = collection[i];
+  for (let i = 0; i < staff.length; i++) {
+    const { username, uuid, role } = staff[i];
 
     // Check if a document with the given `uuid` exists
     const existingStaff = await collection.findOne({ uuid });
@@ -101,7 +101,7 @@ async function updateStaff(staff) {
     } else {
       // Insert a new document
       await collection.insertOne({ username, uuid, role });
-      if (collection.length <= 25) {
+      if (staff.length <= 25) {
         await addToPartner(uuid);
       } else {
         console.log("%s kunne ikke tilføjes som medlem.\nMere end 25 staffs.", uuid);
