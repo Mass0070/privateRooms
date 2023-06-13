@@ -1,5 +1,5 @@
 const { requiredAuthenticated  } = require('./auth.js');
-const { mongodb, mariadb, labymod } = require('./config.json');
+const { mongodb, mariadb, labymod, sa } = require('./config.json');
 const { updateDocs } = require('./updateDocs.js');
 
 const axios = require('axios');
@@ -469,6 +469,57 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
     return res.json({ message: "Success" });
   }
 });
+
+// Send offline servers to storage
+app.get("/api/storage", requiredAuthenticated, async (req, res, next) => {
+  try {
+    const promises = [];
+    connection.query("SELECT id, name FROM servers WHERE status = 'offline'", (error, results, fields) => {
+      if (error) {
+        // Handle the error
+        console.error(error);
+        return;
+      }
+    
+      // Iterate over the results
+      results.forEach((row) => {
+        const id = row.id;
+        const name = row.name;
+        const playerName = '3'; // Replace with the actual player ID
+        console.log(`Forsøger at storage serveren: ${id} ${name}`);
+    
+        // Send the Axios request
+        const config = {
+          timeout: 2000,
+          method: 'get',
+          maxBodyLength: Infinity,
+          url: `${sa.url}${id}/control/storage?playerid=${playerName}`,
+          headers: {
+            'Authorization': sa.token,
+            'Content-Type': 'application/json',
+          },
+        };
+
+        const promise = axios(config)
+        .catch((error) => {
+          console.error(`Kunne ikke storage serveren: ${id} ${name}`);
+        });
+
+        promises.push(promise);
+    });
+    Promise.all(promises)
+    .then(() => {
+      console.log("All requests completed");
+      res.json({ message: "Success" })
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+  });
+  } catch (err) {
+    return res.json({ message: 'Internal Server Error', err });
+  }
+})
 
 // Get staff members for #staff-team
 app.get("/api/staffs", requiredAuthenticated, async (req, res, next) => {
