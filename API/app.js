@@ -474,7 +474,7 @@ app.post('/api/permission', requiredAuthenticated, async (req, res, next) => {
 app.get("/api/storage", requiredAuthenticated, async (req, res, next) => {
   try {
     const promises = [];
-    connection.query("SELECT id, name FROM servers WHERE status = 'offline'", (error, results, fields) => {
+    connection.query("SELECT id, name FROM servers WHERE status = 'offline' LIMIT 5", (error, results, fields) => {
       if (error) {
         // Handle the error
         console.error(error);
@@ -490,7 +490,6 @@ app.get("/api/storage", requiredAuthenticated, async (req, res, next) => {
     
         // Send the Axios request
         const config = {
-          timeout: 2000,
           method: 'get',
           maxBodyLength: Infinity,
           url: `${sa.url}${id}/control/storage?playerid=${playerName}`,
@@ -502,7 +501,7 @@ app.get("/api/storage", requiredAuthenticated, async (req, res, next) => {
 
         const promise = axios(config)
         .catch((error) => {
-          console.error(`Kunne ikke storage serveren: ${id} ${name}`);
+          console.error(`Kunne ikke storage serveren: ${id} ${name} ` + error);
         });
 
         promises.push(promise);
@@ -589,6 +588,17 @@ app.get("/api/discord/update", requiredAuthenticated, async (req, res, next) => 
   } else {
     res.json("ERROR");
   }
+});
+
+// Update username on Discord
+app.get("/api/discordmembers", requiredAuthenticated, async (req, res, next) => {
+    connection.query("SELECT players.username, discordAccounts.discordID "+
+    "FROM players "+
+    "JOIN discordAccounts ON players.id = discordAccounts.playerID", (error, results, fields) => {
+      if (error) throw error;
+
+      res.json(results);
+    });
 });
 
 app.put("/api/*", requiredAuthenticated, async (req, res, next) => {
