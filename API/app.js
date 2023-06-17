@@ -211,6 +211,7 @@ app.post('/api/staffs/', requiredAuthenticated, async (req, res, next) => {
           } else {
             await collection.updateOne({ uuid, staff: true }, { $set: { email: email } });
             await client.close();
+            await updateDocs()
             return res.json({ message: "Success" });
           }
         } else {
