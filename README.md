@@ -38,6 +38,7 @@ Content needed in the config.json
     },
 
     "roles": {
+        "verify": "id",
         "vip": "id",
         "booster": "id"
     },
