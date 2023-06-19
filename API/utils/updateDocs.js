@@ -1,4 +1,4 @@
-const { mongodb, docs } = require('./config.json');
+const { mongodb, docs } = require('../config.json');
 const { ObjectId } = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const fs = require('fs');
