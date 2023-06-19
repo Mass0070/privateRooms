@@ -1,5 +1,6 @@
-// getVerifiedMembers.js
+// checkStorage.js
 
+const { sa } = require('../../config.json');
 const { runQuery } = require('../../utils/mariadb');
 
 async function checkStorage(req, res) {
