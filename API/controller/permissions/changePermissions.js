@@ -1,4 +1,4 @@
-// getPermission.js
+// changePermission.js
 
 const { validateUsername } = require('../../utils/pattern');
 const defaultPermissions = require('./defaultPermissions');
